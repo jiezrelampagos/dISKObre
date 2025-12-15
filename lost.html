@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Report Lost Item | dISKObre</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="style.css" rel="stylesheet">
+</head>
+<body>
+
+<header></header>
+
+<div class="container">
+  <h2>Report Lost Item</h2>
+  <form id="lostForm" enctype="multipart/form-data">
+    
+    <!-- Item Details -->
+    <input type="text" id="itemName" placeholder="Item Name" required>
+    <textarea id="description" placeholder="Description" required></textarea>
+    <input type="text" id="location" placeholder="Last Seen Location" required>
+
+    <!-- Photo Upload -->
+    <label for="itemPhoto">Upload a photo of the lost item:</label>
+    <input type="file" id="itemPhoto" accept="image/*">
+
+    <!-- User Info -->
+    <h3>Your Information (Optional)</h3>
+    <input type="text" id="nickname" placeholder="Nickname (Optional)">
+    <input type="text" id="contact" placeholder="Contact Number or Email (Optional)">
+
+    <!-- Guard Option -->
+    <label>
+      <input type="checkbox" id="leftWithGuard"> I left this item with the nearest guard
+    </label>
+
+    <button type="submit">Submit Lost Item</button>
+  </form>
+</div>
+
+<script type="module" src="script.js"></script>
+
+
+</body>
+</html>

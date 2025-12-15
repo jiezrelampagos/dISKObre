@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Dashboard | dISKObre</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="style.css" rel="stylesheet">
+</head>
+<body>
+
+<header></header>
+
+<div class="container">
+  <h2>Welcome, <span id="userName">User</span>!</h2>
+  <p>You may report or browse lost and found items below.</p>
+
+  <div class="hero-buttons">
+    <a href="lost.html" class="btn btn-large">Report Lost Item</a>
+    <a href="found.html" class="btn btn-large">Report Found Item</a>
+    <a href="list.html" class="btn btn-large">View Items</a>
+    <button class="btn btn-large" onclick="logout()">Logout</button>
+  </div>
+</div>
+
+<script type="module" src="script.js"></script>
+
+
+<script>
+  // Display user's nickname
+  const name = localStorage.getItem('nickname');
+  if(name){
+    document.getElementById('userName').innerText = name;
+  }
+
+  // Protect page (redirect if not logged in)
+  auth.onAuthStateChanged(user => {
+    if(!user){
+      window.location = 'login.html';
+    }
+  });
+</script>
+
+</body>
+</html>

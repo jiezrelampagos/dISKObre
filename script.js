@@ -1,0 +1,221 @@
+import { auth, database, storage } from "./firebase-config.js";
+import {
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  signOut,
+  onAuthStateChanged
+} from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
+
+import {
+  ref,
+  set,
+  push,
+  get,
+  onValue,
+  remove,
+  update
+} from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
+
+import {
+  ref as sRef,
+  uploadBytes,
+  getDownloadURL
+} from "https://www.gstatic.com/firebasejs/9.23.0/firebase-storage.js";
+
+/* ================= AUTH ================= */
+
+let currentUser = null;
+let isAdmin = false;
+
+onAuthStateChanged(auth, (user) => {
+  currentUser = user;
+  isAdmin = user && user.email === "admin@diskobre.com";
+
+  // Protect admin page
+  if (window.location.pathname.includes("admin.html") && !isAdmin) {
+    window.location = "login.html";
+  }
+});
+
+/* ================= SIGN UP ================= */
+
+const signupForm = document.getElementById("signupForm");
+if (signupForm) {
+  signupForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    const nickname = document.getElementById("nickname").value;
+    const email = document.getElementById("email").value;
+    const password = document.getElementById("password").value;
+
+    const userCred = await createUserWithEmailAndPassword(auth, email, password);
+    await set(ref(database, "users/" + userCred.user.uid), { nickname, email });
+
+    alert("Account created!");
+    window.location = "login.html";
+  });
+}
+
+/* ================= LOGIN (FIXED) ================= */
+const loginForm = document.getElementById("loginForm");
+
+if (loginForm) {
+  loginForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    const email = document.getElementById("email").value;
+    const password = document.getElementById("password").value;
+
+    try {
+      const userCred = await signInWithEmailAndPassword(auth, email, password);
+
+      let nickname = "User";
+
+      // Safely fetch nickname (admin may not have a record)
+      const snap = await get(ref(database, "users/" + userCred.user.uid));
+      if (snap.exists()) {
+        nickname = snap.val().nickname;
+      }
+
+      localStorage.setItem("nickname", nickname);
+
+      // Redirect
+      if (email === "admin@diskobre.com") {
+        window.location.href = "admin.html";
+      } else {
+        window.location.href = "dashboard.html";
+      }
+
+    } catch (error) {
+      alert("Login failed: " + error.message);
+    }
+  });
+}
+
+/* ================= LOGOUT ================= */
+
+window.logout = async () => {
+  await signOut(auth);
+  localStorage.clear();
+  window.location = "index.html";
+};
+
+/* ================= SUBMISSIONS ================= */
+
+document.addEventListener("DOMContentLoaded", () => {
+
+  /* ===== FOUND ITEM ===== */
+  const foundForm = document.getElementById("foundForm");
+  if (foundForm) {
+    foundForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const userId = currentUser ? currentUser.uid : "guest";
+
+      const data = await collectItemData("found_items");
+      await push(ref(database, `found_items/${userId}`), data);
+
+      alert("Found item submitted!");
+      foundForm.reset();
+    });
+  }
+
+  /* ===== LOST ITEM ===== */
+  const lostForm = document.getElementById("lostForm");
+  if (lostForm) {
+    lostForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const userId = currentUser ? currentUser.uid : "guest";
+
+      const data = await collectItemData("lost_items");
+      await push(ref(database, `lost_items/${userId}`), data);
+
+      alert("Lost item submitted!");
+      lostForm.reset();
+    });
+  }
+
+  /* ================= VIEW ITEMS (USER) ================= */
+
+  renderItems("lost_items", "lostItemsList", false);
+  renderItems("found_items", "foundItemsList", false);
+
+  /* ================= ADMIN PANEL ================= */
+
+  renderItems("lost_items", "adminLostItems", true);
+  renderItems("found_items", "adminFoundItems", true);
+});
+
+/* ================= HELPERS ================= */
+
+async function collectItemData(folder) {
+  const file = document.getElementById("itemPhoto").files[0];
+  let photoURL = "";
+
+  if (file) {
+    const imgRef = sRef(storage, `${folder}/${Date.now()}_${file.name}`);
+    await uploadBytes(imgRef, file);
+    photoURL = await getDownloadURL(imgRef);
+  }
+
+  return {
+    name: itemName.value,
+    description: description.value,
+    location: location.value,
+    nickname: nickname.value || "Anonymous",
+    contact: contact.value || "N/A",
+    leftWithGuard: leftWithGuard.checked,
+    photo: photoURL,
+    timestamp: Date.now()
+  };
+}
+
+/* ================= RENDER ITEMS ================= */
+
+function renderItems(path, containerId, adminMode) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+
+  onValue(ref(database, path), (snapshot) => {
+    container.innerHTML = "";
+
+    snapshot.forEach((userNode) => {
+      userNode.forEach((itemSnap) => {
+        const item = itemSnap.val();
+        const div = document.createElement("div");
+        div.className = "itemCard";
+
+        div.innerHTML = `
+          <h3>${item.name}</h3>
+          <p>${item.description}</p>
+          <p>Location: ${item.location}</p>
+          <p>Reporter: ${item.nickname}</p>
+          <p>Contact: ${item.contact}</p>
+          ${item.photo ? `<img src="${item.photo}" width="120">` : ""}
+          ${adminMode ? `
+            <button onclick="deleteItem('${path}','${userNode.key}','${itemSnap.key}')">Delete</button>
+            <button onclick="markReturned('${path}','${userNode.key}','${itemSnap.key}')">Mark Returned</button>
+          ` : ""}
+          <hr>
+        `;
+
+        container.appendChild(div);
+      });
+    });
+  });
+}
+
+/* ================= ADMIN ACTIONS ================= */
+
+window.deleteItem = async (path, userId, itemId) => {
+  if (!confirm("Delete this item?")) return;
+  await remove(ref(database, `${path}/${userId}/${itemId}`));
+};
+
+window.markReturned = async (path, userId, itemId) => {
+  await update(ref(database, `${path}/${userId}/${itemId}`), {
+    returned: true
+  });
+  alert("Item marked as returned.");
+};

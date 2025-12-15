@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Report Found Item | dISKObre</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="style.css" rel="stylesheet">
+</head>
+<body>
+
+<header></header>
+
+<div class="container">
+  <h2>Report Found Item</h2>
+  <form id="foundForm" enctype="multipart/form-data">
+    <input type="text" id="itemName" placeholder="Item Name" required>
+    <textarea id="description" placeholder="Description" required></textarea>
+    <input type="text" id="location" placeholder="Location Found" required>
+
+    <label for="itemPhoto">Upload a photo:</label>
+    <input type="file" id="itemPhoto" accept="image/*">
+
+    <h3>Your Information (Optional)</h3>
+    <input type="text" id="nickname" placeholder="Nickname (Optional)">
+    <input type="text" id="contact" placeholder="Contact Number or Email (Optional)">
+
+    <label>
+      <input type="checkbox" id="leftWithGuard"> I left this item with the nearest guard
+    </label>
+
+    <button type="submit">Submit Found Item</button>
+  </form>
+</div>
+
+<script type="module" src="script.js"></script>
+
+</body>
+</html>
