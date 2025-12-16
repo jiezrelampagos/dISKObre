@@ -22,38 +22,32 @@ import {
   getDownloadURL
 } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-storage.js";
 
-/* ================= AUTH ================= */
-
+/* ================= GLOBAL ================= */
 let currentUser = null;
 let isAdmin = false;
 
+/* ================= AUTH STATE ================= */
 onAuthStateChanged(auth, async (user) => {
   currentUser = user;
   isAdmin = user && user.email === "admin@diskobre.com";
 
-    // Only update dashboard greeting if user is logged in
-  const userNameEl = document.getElementById("userName");
-  if (user && userNameEl) {
-    try {
-      const snap = await get(ref(database, "users/" + user.uid));
-      const nickname = snap.exists() ? snap.val().nickname : "User";
-      localStorage.setItem("nickname", nickname);
-      userNameEl.innerText = nickname;  // ✅ This updates the greeting properly
-    } catch {
-      userNameEl.innerText = "User";
-    }
-  }
-});
   const path = window.location.pathname;
 
-  // Protect pages
-  if (!user && path.includes("dashboard.html")) window.location = "login.html";
-  if (path.includes("admin.html") && !isAdmin) window.location = "login.html";
+  // Redirect if not logged in
+  if (!user && path.includes("dashboard.html")) {
+    window.location = "login.html";
+    return;
+  }
+
+  // Redirect if not admin
+  if (path.includes("admin.html") && !isAdmin) {
+    window.location = "login.html";
+    return;
+  }
 
   // Update dashboard greeting
   const userNameEl = document.getElementById("userName");
-  if (userNameEl && user) {
-    // Try to fetch nickname from database
+  if (user && userNameEl) {
     try {
       const snap = await get(ref(database, "users/" + user.uid));
       const nickname = snap.exists() ? snap.val().nickname : "User";
@@ -66,12 +60,20 @@ onAuthStateChanged(auth, async (user) => {
 
   // Show claim reminder
   const reminder = document.getElementById("claimReminder");
-  if (reminder) reminder.style.display = user ? "block" : "none";
+  if (reminder) {
+    reminder.style.display = user ? "block" : "none";
+  }
 
-  // Render items
-  if (document.getElementById("lostItemsList") && user) renderItems("lost_items", "lostItemsList", false);
-  if (document.getElementById("foundItemsList") && user) renderItems("found_items", "foundItemsList", false);
+  // Load user items
+  if (user && document.getElementById("lostItemsList")) {
+    renderItems("lost_items", "lostItemsList", false);
+  }
 
+  if (user && document.getElementById("foundItemsList")) {
+    renderItems("found_items", "foundItemsList", false);
+  }
+
+  // Load admin items
   if (isAdmin && document.getElementById("adminLostItems")) {
     renderItems("lost_items", "adminLostItems", true);
     renderItems("found_items", "adminFoundItems", true);
@@ -79,7 +81,6 @@ onAuthStateChanged(auth, async (user) => {
 });
 
 /* ================= SIGN UP ================= */
-
 const signupForm = document.getElementById("signupForm");
 if (signupForm) {
   signupForm.addEventListener("submit", async (e) => {
@@ -100,7 +101,6 @@ if (signupForm) {
 }
 
 /* ================= LOGIN ================= */
-
 const loginForm = document.getElementById("loginForm");
 if (loginForm) {
   loginForm.addEventListener("submit", async (e) => {
@@ -111,18 +111,17 @@ if (loginForm) {
     try {
       const userCred = await signInWithEmailAndPassword(auth, email, password);
 
-      // fetch nickname
+      let nickname = "User";
       const snap = await get(ref(database, "users/" + userCred.user.uid));
-      const nickname = snap.exists() ? snap.val().nickname : "User";
+      if (snap.exists()) nickname = snap.val().nickname;
+
       localStorage.setItem("nickname", nickname);
 
-      // redirect
       if (email === "admin@diskobre.com") {
         window.location.href = "admin.html";
       } else {
         window.location.href = "dashboard.html";
       }
-
     } catch (err) {
       alert("Login failed: " + err.message);
     }
@@ -130,45 +129,60 @@ if (loginForm) {
 }
 
 /* ================= LOGOUT ================= */
-
 window.logout = async () => {
   try {
     await signOut(auth);
     localStorage.clear();
     window.location = "index.html";
-  } catch (err) {
-    alert("Logout failed: " + err.message);
+  } catch {
+    alert("Logout failed. Please try again.");
   }
 };
 
-/* ================= ITEM SUBMISSION ================= */
-
+/* ================= SUBMIT ITEMS ================= */
 document.addEventListener("DOMContentLoaded", () => {
   const lostForm = document.getElementById("lostForm");
-  if (lostForm) lostForm.addEventListener("submit", submitItem.bind(null, "lost_items", lostForm));
+  if (lostForm) {
+    lostForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      try {
+        const userId = auth.currentUser ? auth.currentUser.uid : "guest";
+        const data = await collectItemData("lost_items");
+        await push(ref(database, `lost_items/${userId}`), { ...data, status: "active" });
+        alert("Lost item submitted!");
+        lostForm.reset();
+      } catch {
+        alert("Failed to submit lost item.");
+      }
+    });
+  }
 
   const foundForm = document.getElementById("foundForm");
-  if (foundForm) foundForm.addEventListener("submit", submitItem.bind(null, "found_items", foundForm));
+  if (foundForm) {
+    foundForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      try {
+        const userId = auth.currentUser ? auth.currentUser.uid : "guest";
+        const data = await collectItemData("found_items");
+        await push(ref(database, `found_items/${userId}`), { ...data, status: "active" });
+        alert("Found item submitted!");
+        foundForm.reset();
+      } catch {
+        alert("Failed to submit found item.");
+      }
+    });
+  }
+
+  // Load items for users
+  renderItems("lost_items", "lostItemsList", false);
+  renderItems("found_items", "foundItemsList", false);
+
+  // Load items for admin
+  renderItems("lost_items", "adminLostItems", true);
+  renderItems("found_items", "adminFoundItems", true);
 });
 
-async function submitItem(path, form, e) {
-  e.preventDefault();
-  if (!currentUser) return alert("Please login first.");
-
-  try {
-    const userId = currentUser.uid;
-    const data = await collectItemData(path);
-    await push(ref(database, `${path}/${userId}`), { ...data, status: "active" });
-    alert("Item submitted!");
-    form.reset();
-  } catch (err) {
-    console.error(err);
-    alert("Submission failed: " + err.message);
-  }
-}
-
-/* ================= HELPER: collectItemData ================= */
-
+/* ================= HELPERS ================= */
 async function collectItemData(folder) {
   const itemNameEl = document.getElementById("itemName");
   const descriptionEl = document.getElementById("description");
@@ -179,7 +193,7 @@ async function collectItemData(folder) {
   const photoEl = document.getElementById("itemPhoto");
 
   let photoURL = "";
-  if (photoEl && photoEl.files.length > 0) {
+  if (photoEl?.files?.length > 0) {
     const file = photoEl.files[0];
     const imgRef = sRef(storage, `${folder}/${Date.now()}_${file.name}`);
     await uploadBytes(imgRef, file);
@@ -187,11 +201,11 @@ async function collectItemData(folder) {
   }
 
   return {
-    name: itemNameEl?.value || "",
-    description: descriptionEl?.value || "",
-    location: locationEl?.value || "",
-    nickname: nicknameEl?.value || "Anonymous",
-    contact: contactEl?.value || "N/A",
+    name: itemNameEl?.value.trim() || "",
+    description: descriptionEl?.value.trim() || "",
+    location: locationEl?.value.trim() || "",
+    nickname: nicknameEl?.value.trim() || "Anonymous",
+    contact: contactEl?.value.trim() || "N/A",
     leftWithGuard: leftWithGuardEl?.checked || false,
     photo: photoURL,
     timestamp: Date.now()
@@ -199,14 +213,12 @@ async function collectItemData(folder) {
 }
 
 /* ================= RENDER ITEMS ================= */
-
 function renderItems(path, containerId, adminMode = false) {
   const container = document.getElementById(containerId);
   if (!container) return;
 
   onValue(ref(database, path), (snapshot) => {
     container.innerHTML = "";
-
     snapshot.forEach((userNode) => {
       userNode.forEach((itemSnap) => {
         const item = itemSnap.val();
@@ -214,6 +226,8 @@ function renderItems(path, containerId, adminMode = false) {
 
         const div = document.createElement("div");
         div.className = "itemCard";
+
+        if (item.status && item.status !== "active") div.style.opacity = "0.45";
 
         div.innerHTML = `
           <h3>${item.name}</h3>
@@ -224,12 +238,20 @@ function renderItems(path, containerId, adminMode = false) {
           ${item.photo ? `<img src="${item.photo}" width="120">` : ""}
           ${
             adminMode ? `
-            <button onclick="deleteItem('${path}','${userNode.key}','${itemSnap.key}')">Delete</button>
-            <button onclick="markReturned('${path}','${userNode.key}','${itemSnap.key}')">Mark Returned</button>
-          ` : ""
+              <button onclick="deleteItem('${path}','${userNode.key}','${itemSnap.key}')">Delete</button>
+              <button onclick="markReturned('${path}','${userNode.key}','${itemSnap.key}')">Mark Returned</button>
+            ` : ""
+          }
+          ${
+            !adminMode && currentUser?.uid === userNode.key && item.status === "active"
+              ? `<button onclick="userMarkReturned('${path}','${userNode.key}','${itemSnap.key}')">
+                  ${path === "lost_items" ? "Mark as Found" : "Mark as Claimed"}
+                </button>`
+              : ""
           }
           <hr>
         `;
+
         container.appendChild(div);
       });
     });
@@ -237,7 +259,6 @@ function renderItems(path, containerId, adminMode = false) {
 }
 
 /* ================= ADMIN ACTIONS ================= */
-
 window.deleteItem = async (path, userId, itemId) => {
   if (!confirm("Delete this item?")) return;
   await remove(ref(database, `${path}/${userId}/${itemId}`));
@@ -245,5 +266,11 @@ window.deleteItem = async (path, userId, itemId) => {
 
 window.markReturned = async (path, userId, itemId) => {
   await update(ref(database, `${path}/${userId}/${itemId}`), { returned: true });
+  alert("Item marked as returned.");
+};
+
+/* ================= USER ACTIONS ================= */
+window.userMarkReturned = async (path, userId, itemId) => {
+  await update(ref(database, `${path}/${userId}/${itemId}`), { status: "returned" });
   alert("Item marked as returned.");
 };
