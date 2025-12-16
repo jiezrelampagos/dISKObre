@@ -203,22 +203,30 @@ if (document.getElementById("foundItemsList")) {
 /* ================= HELPERS ================= */
 
 async function collectItemData(folder) {
-  const file = document.getElementById("itemPhoto").files[0];
+  const itemNameEl = document.getElementById("itemName");
+  const descriptionEl = document.getElementById("description");
+  const locationEl = document.getElementById("location");
+  const nicknameEl = document.getElementById("nickname");
+  const contactEl = document.getElementById("contact");
+  const leftWithGuardEl = document.getElementById("leftWithGuard");
+  const photoEl = document.getElementById("itemPhoto");
+
   let photoURL = "";
 
-  if (file) {
+  if (photoEl && photoEl.files.length > 0) {
+    const file = photoEl.files[0];
     const imgRef = sRef(storage, `${folder}/${Date.now()}_${file.name}`);
     await uploadBytes(imgRef, file);
     photoURL = await getDownloadURL(imgRef);
   }
 
   return {
-    name: itemName.value,
-    description: description.value,
-    location: location.value,
-    nickname: nickname.value || "Anonymous",
-    contact: contact.value || "N/A",
-    leftWithGuard: leftWithGuard.checked,
+    name: itemNameEl?.value.trim() || "",
+    description: descriptionEl?.value.trim() || "",
+    location: locationEl?.value.trim() || "",
+    nickname: nicknameEl?.value.trim() || "Anonymous",
+    contact: contactEl?.value.trim() || "N/A",
+    leftWithGuard: leftWithGuardEl?.checked || false,
     photo: photoURL,
     timestamp: Date.now()
   };
