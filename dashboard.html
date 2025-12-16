@@ -12,13 +12,8 @@
 
 <div class="container">
   <h2>Welcome, <span id="userName">User</span>!</h2>
-<p>You may report or browse lost and found items below.</p>
+  <p>You may report or browse lost and found items below.</p>
 
-    <!-- CLAIM REMINDER -->
-  <div id="claimReminder" class="claim-reminder" style="display:none;">
-   <strong>Friendly reminder!</strong><br> Already got your item back? Please don’t forget to click
-  <strong>“Mark as Claimed”</strong> on your report so we can keep the list clean and help others faster. 
-  </div>
   <div class="hero-buttons">
     <a href="lost.html" class="btn btn-large">Report Lost Item</a>
     <a href="found.html" class="btn btn-large">Report Found Item</a>
@@ -27,8 +22,23 @@
   </div>
 </div>
 
-  
 <script type="module" src="script.js"></script>
+
+
+<script>
+  // Display user's nickname
+  const name = localStorage.getItem('nickname');
+  if(name){
+    document.getElementById('userName').innerText = name;
+  }
+
+  // Protect page (redirect if not logged in)
+  auth.onAuthStateChanged(user => {
+    if(!user){
+      window.location = 'login.html';
+    }
+  });
+</script>
 
 </body>
 </html>
