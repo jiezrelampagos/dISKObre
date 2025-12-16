@@ -28,44 +28,57 @@ let currentUser = null;
 let isAdmin = false;
 
 onAuthStateChanged(auth, (user) => {
-  currentUser = user;
-  isAdmin = user && user.email === "admin@diskobre.com";
+  currentUser = user;
+  isAdmin = user && user.email === "admin@diskobre.com";
 
-  // Update dashboard greeting
-const userNameEl = document.getElementById("userName");
-if (userNameEl && user) {
-  const nickname = localStorage.getItem("nickname") || "User";
-  userNameEl.innerText = nickname;
-} 
-  // SHOW FRIENDLY CLAIM REMINDER
-  const reminder = document.getElementById("claimReminder");
-  if (reminder) {
-    reminder.style.display = user ? "block" : "none";
-  }
-  
-  // Protect admin page
-  if (window.location.pathname.includes("admin.html") && !isAdmin) {
-    window.location = "login.html";
-    return;
-  }
+  const path = window.location.pathname;
 
-  // USER DASHBOARD
-  if (document.getElementById("lostItemsList")) {
-    renderItems("lost_items", "lostItemsList", false);
-  }
+  /* ================= PAGE PROTECTION ================= */
 
-  if (document.getElementById("foundItemsList")) {
-    renderItems("found_items", "foundItemsList", false);
-  }
+  // Protect dashboard (must be logged in)
+  if (!user && path.includes("dashboard.html")) {
+    window.location = "login.html";
+    return;
+  }
 
-  // ADMIN DASHBOARD (plain view — all items)
-  if (isAdmin && document.getElementById("adminActiveLost")) {
-    renderItems("lost_items", "adminActiveLost", true);
-    renderItems("found_items", "adminActiveFound", true);
-  }
+  // Protect admin (admin only)
+  if (path.includes("admin.html") && !isAdmin) {
+    window.location = "login.html";
+    return;
+  }
+
+  /* ================= DASHBOARD GREETING ================= */
+
+  const userNameEl = document.getElementById("userName");
+  if (userNameEl && user) {
+    const nickname = localStorage.getItem("nickname") || "User";
+    userNameEl.innerText = nickname;
+  }
+
+  /* ================= CLAIM REMINDER ================= */
+
+  const reminder = document.getElementById("claimReminder");
+  if (reminder) {
+    reminder.style.display = user ? "block" : "none";
+  }
+
+  /* ================= USER ITEM LISTS ================= */
+
+  if (user && document.getElementById("lostItemsList")) {
+    renderItems("lost_items", "lostItemsList", false);
+  }
+
+  if (user && document.getElementById("foundItemsList")) {
+    renderItems("found_items", "foundItemsList", false);
+  }
+
+  /* ================= ADMIN VIEW (PLAIN) ================= */
+
+  if (isAdmin && document.getElementById("adminActiveLost")) {
+    renderItems("lost_items", "adminActiveLost", true);
+    renderItems("found_items", "adminActiveFound", true);
+  }
 });
-
-
 
 
 /* ================= SIGN UP ================= */
