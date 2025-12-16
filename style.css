@@ -267,3 +267,12 @@ input[type="checkbox"] {
     margin-right: 0;
   }
 }
+
+.claim-reminder {
+  background: #f0f9ff;
+  border-left: 5px solid #3b82f6;
+  padding: 12px 16px;
+  margin-bottom: 15px;
+  border-radius: 6px;
+  font-size: 0.95rem;
+}
