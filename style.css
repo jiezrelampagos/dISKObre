@@ -278,5 +278,13 @@ input[type="checkbox"] {
   font-size: 0.75rem;
   color: #232b2b;             /* dim black text */
 }
+=================FORCE CLICK========================
+* {
+  pointer-events: auto;
+}
 
-
+form, button, input, textarea, select {
+  pointer-events: auto !important;
+  position: relative;
+  z-index: 10;
+}
