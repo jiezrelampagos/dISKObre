@@ -22,76 +22,75 @@ import {
   getDownloadURL
 } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-storage.js";
 
-/* ================= GLOBAL ================= */
+/* ================= GLOBALS ================= */
+
 let currentUser = null;
 let isAdmin = false;
 
-/* ================= AUTH STATE ================= */
-onAuthStateChanged(auth, async (user) => {
-  currentUser = user;
-  isAdmin = user && user.email === "admin@diskobre.com";
+/* ================= ON LOAD & AUTH STATE ================= */
 
-  const path = window.location.pathname;
+document.addEventListener("DOMContentLoaded", () => {
+  onAuthStateChanged(auth, async (user) => {
+    currentUser = user;
+    isAdmin = user && user.email === "admin@diskobre.com";
+    const path = window.location.pathname;
 
-  // Redirect if not logged in
-  if (!user && path.includes("dashboard.html")) {
-    window.location = "login.html";
-    return;
-  }
-
-  // Redirect if not admin
-  if (path.includes("admin.html") && !isAdmin) {
-    window.location = "login.html";
-    return;
-  }
-
-  // Update dashboard greeting
-  const userNameEl = document.getElementById("userName");
-  if (user && userNameEl) {
-    try {
-      const snap = await get(ref(database, "users/" + user.uid));
-      const nickname = snap.exists() ? snap.val().nickname : "User";
-      localStorage.setItem("nickname", nickname);
-      userNameEl.innerText = nickname;
-    } catch {
-      userNameEl.innerText = "User";
+    // Redirect if not logged in for user dashboard
+    if (!user && path.includes("dashboard.html")) {
+      window.location = "login.html";
+      return;
     }
-  }
 
-  // Show claim reminder
-  const reminder = document.getElementById("claimReminder");
-  if (reminder) {
-    reminder.style.display = user ? "block" : "none";
-  }
+    // Redirect if not admin for admin page
+    if (path.includes("admin.html") && !isAdmin) {
+      window.location = "login.html";
+      return;
+    }
 
-  // Load user items
-  if (user && document.getElementById("lostItemsList")) {
-    renderItems("lost_items", "lostItemsList", false);
-  }
+    // Update dashboard greeting
+    const userNameEl = document.getElementById("userName");
+    if (user && userNameEl) {
+      try {
+        const snap = await get(ref(database, "users/" + user.uid));
+        const nickname = snap.exists() ? snap.val().nickname : "User";
+        userNameEl.innerText = nickname;
+        localStorage.setItem("nickname", nickname);
+      } catch {
+        userNameEl.innerText = "User";
+      }
+    }
 
-  if (user && document.getElementById("foundItemsList")) {
-    renderItems("found_items", "foundItemsList", false);
-  }
+    // Show claim reminder
+    const reminder = document.getElementById("claimReminder");
+    if (reminder) reminder.style.display = user ? "block" : "none";
 
-  // Load admin items
-  if (isAdmin && document.getElementById("adminLostItems")) {
-    renderItems("lost_items", "adminLostItems", true);
-    renderItems("found_items", "adminFoundItems", true);
-  }
+    // Render items for user dashboard
+    if (user && document.getElementById("lostItemsList")) renderItems("lost_items", "lostItemsList", false);
+    if (user && document.getElementById("foundItemsList")) renderItems("found_items", "foundItemsList", false);
+
+    // Render items for admin dashboard
+    if (isAdmin && document.getElementById("adminLostItems")) {
+      renderItems("lost_items", "adminLostItems", true);
+      renderItems("found_items", "adminFoundItems", true);
+    }
+  });
 });
 
 /* ================= SIGN UP ================= */
+
 const signupForm = document.getElementById("signupForm");
 if (signupForm) {
   signupForm.addEventListener("submit", async (e) => {
     e.preventDefault();
-    const nickname = document.getElementById("nickname").value.trim();
-    const email = document.getElementById("email").value.trim();
+
+    const nickname = document.getElementById("nickname").value;
+    const email = document.getElementById("email").value;
     const password = document.getElementById("password").value;
 
     try {
       const userCred = await createUserWithEmailAndPassword(auth, email, password);
       await set(ref(database, "users/" + userCred.user.uid), { nickname, email });
+
       alert("Account created!");
       window.location = "login.html";
     } catch (err) {
@@ -101,27 +100,32 @@ if (signupForm) {
 }
 
 /* ================= LOGIN ================= */
+
 const loginForm = document.getElementById("loginForm");
 if (loginForm) {
   loginForm.addEventListener("submit", async (e) => {
     e.preventDefault();
-    const email = document.getElementById("email").value.trim();
+
+    const email = document.getElementById("email").value;
     const password = document.getElementById("password").value;
 
     try {
       const userCred = await signInWithEmailAndPassword(auth, email, password);
 
+      // Fetch nickname
       let nickname = "User";
       const snap = await get(ref(database, "users/" + userCred.user.uid));
       if (snap.exists()) nickname = snap.val().nickname;
 
       localStorage.setItem("nickname", nickname);
 
+      // Redirect
       if (email === "admin@diskobre.com") {
         window.location.href = "admin.html";
       } else {
         window.location.href = "dashboard.html";
       }
+
     } catch (err) {
       alert("Login failed: " + err.message);
     }
@@ -129,17 +133,19 @@ if (loginForm) {
 }
 
 /* ================= LOGOUT ================= */
+
 window.logout = async () => {
   try {
     await signOut(auth);
     localStorage.clear();
     window.location = "index.html";
-  } catch {
-    alert("Logout failed. Please try again.");
+  } catch (err) {
+    alert("Logout failed: " + err.message);
   }
 };
 
-/* ================= SUBMIT ITEMS ================= */
+/* ================= ITEM SUBMISSIONS ================= */
+
 document.addEventListener("DOMContentLoaded", () => {
   const lostForm = document.getElementById("lostForm");
   if (lostForm) {
@@ -151,8 +157,8 @@ document.addEventListener("DOMContentLoaded", () => {
         await push(ref(database, `lost_items/${userId}`), { ...data, status: "active" });
         alert("Lost item submitted!");
         lostForm.reset();
-      } catch {
-        alert("Failed to submit lost item.");
+      } catch (err) {
+        alert("Submission failed: " + err.message);
       }
     });
   }
@@ -167,22 +173,15 @@ document.addEventListener("DOMContentLoaded", () => {
         await push(ref(database, `found_items/${userId}`), { ...data, status: "active" });
         alert("Found item submitted!");
         foundForm.reset();
-      } catch {
-        alert("Failed to submit found item.");
+      } catch (err) {
+        alert("Submission failed: " + err.message);
       }
     });
   }
-
-  // Load items for users
-  renderItems("lost_items", "lostItemsList", false);
-  renderItems("found_items", "foundItemsList", false);
-
-  // Load items for admin
-  renderItems("lost_items", "adminLostItems", true);
-  renderItems("found_items", "adminFoundItems", true);
 });
 
-/* ================= HELPERS ================= */
+/* ================= HELPER: COLLECT ITEM DATA ================= */
+
 async function collectItemData(folder) {
   const itemNameEl = document.getElementById("itemName");
   const descriptionEl = document.getElementById("description");
@@ -201,11 +200,11 @@ async function collectItemData(folder) {
   }
 
   return {
-    name: itemNameEl?.value.trim() || "",
-    description: descriptionEl?.value.trim() || "",
-    location: locationEl?.value.trim() || "",
-    nickname: nicknameEl?.value.trim() || "Anonymous",
-    contact: contactEl?.value.trim() || "N/A",
+    name: itemNameEl?.value || "",
+    description: descriptionEl?.value || "",
+    location: locationEl?.value || "",
+    nickname: nicknameEl?.value || "Anonymous",
+    contact: contactEl?.value || "N/A",
     leftWithGuard: leftWithGuardEl?.checked || false,
     photo: photoURL,
     timestamp: Date.now()
@@ -213,20 +212,20 @@ async function collectItemData(folder) {
 }
 
 /* ================= RENDER ITEMS ================= */
+
 function renderItems(path, containerId, adminMode = false) {
   const container = document.getElementById(containerId);
   if (!container) return;
 
   onValue(ref(database, path), (snapshot) => {
     container.innerHTML = "";
-    snapshot.forEach((userNode) => {
-      userNode.forEach((itemSnap) => {
+    snapshot.forEach(userNode => {
+      userNode.forEach(itemSnap => {
         const item = itemSnap.val();
         if (!item) return;
 
         const div = document.createElement("div");
         div.className = "itemCard";
-
         if (item.status && item.status !== "active") div.style.opacity = "0.45";
 
         div.innerHTML = `
@@ -243,7 +242,7 @@ function renderItems(path, containerId, adminMode = false) {
             ` : ""
           }
           ${
-            !adminMode && currentUser?.uid === userNode.key && item.status === "active"
+            !adminMode && currentUser && currentUser.uid === userNode.key && item.status === "active"
               ? `<button onclick="userMarkReturned('${path}','${userNode.key}','${itemSnap.key}')">
                   ${path === "lost_items" ? "Mark as Found" : "Mark as Claimed"}
                 </button>`
@@ -251,7 +250,6 @@ function renderItems(path, containerId, adminMode = false) {
           }
           <hr>
         `;
-
         container.appendChild(div);
       });
     });
@@ -259,6 +257,7 @@ function renderItems(path, containerId, adminMode = false) {
 }
 
 /* ================= ADMIN ACTIONS ================= */
+
 window.deleteItem = async (path, userId, itemId) => {
   if (!confirm("Delete this item?")) return;
   await remove(ref(database, `${path}/${userId}/${itemId}`));
@@ -270,6 +269,7 @@ window.markReturned = async (path, userId, itemId) => {
 };
 
 /* ================= USER ACTIONS ================= */
+
 window.userMarkReturned = async (path, userId, itemId) => {
   await update(ref(database, `${path}/${userId}/${itemId}`), { status: "returned" });
   alert("Item marked as returned.");
