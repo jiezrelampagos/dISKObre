@@ -267,24 +267,3 @@ input[type="checkbox"] {
     margin-right: 0;
   }
 }
-
-/* ================= FRIENDLY REMINDER ================= */
-
-.claim-reminder {
-  background: #fdf2f2;        /* light maroon tint */
-  padding: 12px 16px;
-  margin-bottom: 15px;
-  border-radius: 4px;
-  font-size: 0.75rem;
-  color: #232b2b;             /* dim black text */
-}
-=================FORCE CLICK========================
-* {
-  pointer-events: auto;
-}
-
-form, button, input, textarea, select {
-  pointer-events: auto !important;
-  position: relative;
-  z-index: 10;
-}
