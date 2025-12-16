@@ -34,8 +34,25 @@ onAuthStateChanged(auth, (user) => {
   // Protect admin page
   if (window.location.pathname.includes("admin.html") && !isAdmin) {
     window.location = "login.html";
+    return;
+  }
+
+  // USER DASHBOARD
+  if (document.getElementById("lostItemsList")) {
+    renderItems("lost_items", "lostItemsList", false);
+  }
+
+  if (document.getElementById("foundItemsList")) {
+    renderItems("found_items", "foundItemsList", false);
+  }
+
+  // ADMIN DASHBOARD (plain view — all items)
+  if (isAdmin && document.getElementById("adminActiveLost")) {
+    renderItems("lost_items", "adminActiveLost", true);
+    renderItems("found_items", "adminActiveFound", true);
   }
 });
+
 
 /* ================= SIGN UP ================= */
 
