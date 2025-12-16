@@ -282,12 +282,13 @@ input[type="checkbox"] {
 
 /* ================= Waves container at the bottom ================= */
 
+
 .bottom-waves {
   position: absolute;
   bottom: 0;
   left: 0;
   width: 100%;
-  height: 250px; /* slightly taller for bigger waves */
+  height: 200px; /* adjust height of wave area */
   overflow: hidden;
   z-index: 0;
 }
@@ -302,5 +303,6 @@ input[type="checkbox"] {
 .container {
   position: relative;
   z-index: 1;
-  padding-bottom: 250px; /* space for the waves */
+  padding-bottom: 200px; /* space for the waves */
 }
+
