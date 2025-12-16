@@ -53,6 +53,13 @@ onAuthStateChanged(auth, (user) => {
   }
 });
 
+const reminder = document.getElementById("claimReminder");
+
+if (reminder) {
+  reminder.style.display = user ? "block" : "none";
+}
+
+
 
 /* ================= SIGN UP ================= */
 
