@@ -31,6 +31,13 @@ onAuthStateChanged(auth, (user) => {
   currentUser = user;
   isAdmin = user && user.email === "admin@diskobre.com";
 
+  
+  // SHOW FRIENDLY CLAIM REMINDER
+  const reminder = document.getElementById("claimReminder");
+  if (reminder) {
+    reminder.style.display = user ? "block" : "none";
+  }
+  
   // Protect admin page
   if (window.location.pathname.includes("admin.html") && !isAdmin) {
     window.location = "login.html";
