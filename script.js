@@ -31,7 +31,12 @@ onAuthStateChanged(auth, (user) => {
   currentUser = user;
   isAdmin = user && user.email === "admin@diskobre.com";
 
-  
+  // Update dashboard greeting
+const userNameEl = document.getElementById("userName");
+if (userNameEl && user) {
+  const nickname = localStorage.getItem("nickname") || "User";
+  userNameEl.innerText = nickname;
+} 
   // SHOW FRIENDLY CLAIM REMINDER
   const reminder = document.getElementById("claimReminder");
   if (reminder) {
