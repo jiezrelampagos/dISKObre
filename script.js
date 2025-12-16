@@ -135,38 +135,53 @@ window.logout = async () => {
 
 document.addEventListener("DOMContentLoaded", () => {
 
-  /* ===== FOUND ITEM ===== */
-  const foundForm = document.getElementById("foundForm");
-  if (foundForm) {
-    foundForm.addEventListener("submit", async (e) => {
-      e.preventDefault();
-
-      const userId = currentUser ? currentUser.uid : "guest";
-
-      const data = await collectItemData("found_items");
-      await push(ref(database, `found_items/${userId}`), data);
-
-      alert("Found item submitted!");
-      foundForm.reset();
-    });
-  }
-
-  /* ===== LOST ITEM ===== */
   const lostForm = document.getElementById("lostForm");
   if (lostForm) {
     lostForm.addEventListener("submit", async (e) => {
       e.preventDefault();
 
-      const userId = currentUser ? currentUser.uid : "guest";
+      try {
+        const userId = auth.currentUser ? auth.currentUser.uid : "guest";
+        const data = await collectItemData("lost_items");
 
-      const data = await collectItemData("lost_items");
-      await push(ref(database, `lost_items/${userId}`), data);
+        await push(ref(database, `lost_items/${userId}`), {
+          ...data,
+          status: "active"
+        });
 
-      alert("Lost item submitted!");
-      lostForm.reset();
+        alert("Lost item submitted!");
+        lostForm.reset();
+      } catch (err) {
+        console.error(err);
+        alert("Submission failed");
+      }
     });
   }
 
+  const foundForm = document.getElementById("foundForm");
+  if (foundForm) {
+    foundForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      try {
+        const userId = auth.currentUser ? auth.currentUser.uid : "guest";
+        const data = await collectItemData("found_items");
+
+        await push(ref(database, `found_items/${userId}`), {
+          ...data,
+          status: "active"
+        });
+
+        alert("Found item submitted!");
+        foundForm.reset();
+      } catch (err) {
+        console.error(err);
+        alert("Submission failed");
+      }
+    });
+  }
+
+});
 
  /* ================= VIEW ITEMS (USER) ================= */
 
