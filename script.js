@@ -173,7 +173,7 @@ async function collectItemData(folder) {
 
 /* ================= RENDER ITEMS ================= */
 
-function renderItems(path, containerId, adminMode) {
+function renderItems(path, containerId, adminMode = false) {
   const container = document.getElementById(containerId);
   if (!container) return;
 
@@ -183,20 +183,49 @@ function renderItems(path, containerId, adminMode) {
     snapshot.forEach((userNode) => {
       userNode.forEach((itemSnap) => {
         const item = itemSnap.val();
+        if (!item) return;
+
         const div = document.createElement("div");
         div.className = "itemCard";
+
+        if (item.status && item.status !== "active") {
+          div.style.opacity = "0.45";
+        }
 
         div.innerHTML = `
           <h3>${item.name}</h3>
           <p>${item.description}</p>
-          <p>Location: ${item.location}</p>
-          <p>Reporter: ${item.nickname}</p>
-          <p>Contact: ${item.contact}</p>
+          <p><strong>Location:</strong> ${item.location}</p>
+          <p><strong>Reporter:</strong> ${item.nickname}</p>
+          <p><strong>Contact:</strong> ${item.contact}</p>
           ${item.photo ? `<img src="${item.photo}" width="120">` : ""}
-          ${adminMode ? `
-            <button onclick="deleteItem('${path}','${userNode.key}','${itemSnap.key}')">Delete</button>
-            <button onclick="markReturned('${path}','${userNode.key}','${itemSnap.key}')">Mark Returned</button>
-          ` : ""}
+
+          ${
+            adminMode && item.status === "active"
+              ? `
+              <button onclick="markReturned('${path}','${userNode.key}','${itemSnap.key}')">
+                Mark Returned
+              </button>
+              <button onclick="deleteItem('${path}','${userNode.key}','${itemSnap.key}')">
+                Delete
+              </button>
+            `
+              : ""
+          }
+
+          ${
+            !adminMode &&
+            currentUser &&
+            currentUser.uid === userNode.key &&
+            item.status === "active"
+              ? `
+              <button onclick="userMarkReturned('${path}','${userNode.key}','${itemSnap.key}')">
+                ${path === "lost_items" ? "Mark as Found" : "Mark as Claimed"}
+              </button>
+            `
+              : ""
+          }
+
           <hr>
         `;
 
@@ -205,6 +234,7 @@ function renderItems(path, containerId, adminMode) {
     });
   });
 }
+
 
 /* ================= ADMIN ACTIONS ================= */
 
@@ -217,5 +247,14 @@ window.markReturned = async (path, userId, itemId) => {
   await update(ref(database, `${path}/${userId}/${itemId}`), {
     returned: true
   });
+  alert("Item marked as returned.");
+};
+
+/* ================= USER ACTIONS ================= */
+window.userMarkReturned = async (path, userId, itemId) => {
+  await update(ref(database, `${path}/${userId}/${itemId}`), {
+    status: "returned"
+  });
+
   alert("Item marked as returned.");
 };
