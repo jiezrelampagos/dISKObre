@@ -31,6 +31,19 @@ onAuthStateChanged(auth, async (user) => {
   currentUser = user;
   isAdmin = user && user.email === "admin@diskobre.com";
 
+    // Only update dashboard greeting if user is logged in
+  const userNameEl = document.getElementById("userName");
+  if (user && userNameEl) {
+    try {
+      const snap = await get(ref(database, "users/" + user.uid));
+      const nickname = snap.exists() ? snap.val().nickname : "User";
+      localStorage.setItem("nickname", nickname);
+      userNameEl.innerText = nickname;  // ✅ This updates the greeting properly
+    } catch {
+      userNameEl.innerText = "User";
+    }
+  }
+});
   const path = window.location.pathname;
 
   // Protect pages
