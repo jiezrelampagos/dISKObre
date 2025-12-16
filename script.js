@@ -196,22 +196,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
 });
 
- /* ================= VIEW ITEMS (USER) ================= */
-
-if (document.getElementById("lostItemsList")) {
-  renderItems("lost_items", "lostItemsList", false);
-}
-
-if (document.getElementById("foundItemsList")) {
-  renderItems("found_items", "foundItemsList", false);
-}
-
-
-  /* ================= ADMIN PANEL ================= */
-
-  renderItems("lost_items", "adminLostItems", true);
-  renderItems("found_items", "adminFoundItems", true);
-});
 
 /* ================= HELPERS ================= */
 
