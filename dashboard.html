@@ -32,21 +32,5 @@
 
 <script type="module" src="script.js"></script>
 
-
-<script>
-  // Display user's nickname
-  const name = localStorage.getItem('nickname');
-  if(name){
-    document.getElementById('userName').innerText = name;
-  }
-
-  // Protect page (redirect if not logged in)
-  auth.onAuthStateChanged(user => {
-    if(!user){
-      window.location = 'login.html';
-    }
-  });
-</script>
-
 </body>
 </html>
