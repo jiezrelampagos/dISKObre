@@ -167,10 +167,17 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  /* ================= VIEW ITEMS (USER) ================= */
 
+ /* ================= VIEW ITEMS (USER) ================= */
+
+if (document.getElementById("lostItemsList")) {
   renderItems("lost_items", "lostItemsList", false);
+}
+
+if (document.getElementById("foundItemsList")) {
   renderItems("found_items", "foundItemsList", false);
+}
+
 
   /* ================= ADMIN PANEL ================= */
 
